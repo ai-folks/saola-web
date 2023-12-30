@@ -1,0 +1,16 @@
+# Node modules
+node_modules/
+
+# Build outputs
+dist/
+*.log
+*.tsbuildinfo
+
+# Mac system files
+.DS_Store
+
+# IDE-specific files
+.idea/
+*.iml
+.vscode/
+*~
