@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
-import { Box, Container, Heading } from "@chakra-ui/react";
+import React, { useEffect, useRef, useState } from 'react';
+import { Box, Container, Heading, Textarea, VStack, Text } from "@chakra-ui/react";
+
 
 import LoadingSpinner from 'src/components/LoadingSpinner';
 import { useAppSelector } from "src/state/hooks/useAppDispatch";
@@ -8,7 +9,9 @@ import PortNames from 'src/types/PortNames';
 const SidePanelApp = () => {
   const port = useRef<chrome.runtime.Port>();
   const [isConnected, setIsConnected] = React.useState(false);
-  const cursorpos = useAppSelector(state => state.content.cursorPosition)
+  const [messages, setMessages] = useState<string[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const connect = async () => {
     const sidePanelPort = chrome.runtime.connect({ name: PortNames.SidePanelPort });
@@ -30,23 +33,51 @@ const SidePanelApp = () => {
     connect();
   }, []);
 
-  if (!isConnected) {
-    return (
+  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(event.target.value);
+  };
+
+  const handleSend = () => {
+    if (inputValue.trim()) {
+      setMessages([...messages, inputValue]);
+      setInputValue('');
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  };
+
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSend();
+    }
+  };
+
+  return (
+    !isConnected ? (
       <Box height="100vh">
         <LoadingSpinner />
       </Box>
-    );
-  }
-
-  return (
-      <Container textAlign={'center'}>
-        <Heading>Side Panel Tutorial</Heading>
-        <Box mt={8}>
-          <Heading as={"h2"} size={"md"}>Cursor Position</Heading>
-          <Heading>X: {cursorpos.x}</Heading>
-          <Heading>Y: {cursorpos.y}</Heading>
-        </Box>
+    ) : (
+      <Container height="100vh">
+        <VStack height="100%" spacing={4}>
+          <Box flex="1" overflowY="auto" ref={scrollRef} width="100%">
+            {messages.map((message, index) => (
+              <Text key={index}>{message}</Text>
+            ))}
+          </Box>
+          <Textarea
+            placeholder="Type your message here..."
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
+          />
+        </VStack>
       </Container>
+    )
   );
 };
 
